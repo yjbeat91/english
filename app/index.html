@@ -57,6 +57,8 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance
 .chip small{font-family:var(--f-body);font-weight:400;font-size:.78rem;color:var(--muted)}
 .chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .chip.on small{color:var(--bg);opacity:.8}
+.chip.set{font-family:var(--f-display);font-weight:400}
+.chip.full:not(.on){border-color:var(--leaf);background:var(--ok-bg)}
 .chip.wrongchip{font-family:var(--f-display);font-weight:400}
 .chip.wrongchip.on{background:var(--coral);border-color:var(--coral);color:var(--on-color)}
 .chip.wrongchip.on small{color:var(--on-color)}
@@ -199,12 +201,12 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
     </section>
 
     <section class="sec">
-      <div class="sec-h"><h3>1. 단어 고르기</h3><small id="selInfo">전체 단어로 놀아요</small></div>
+      <div class="sec-h"><h3>1. 단어 세트 고르기</h3><small id="selInfo">전체 단어로 놀아요</small></div>
       <div class="chips" id="chips"></div>
     </section>
 
     <section class="sec">
-      <div class="sec-h"><h3>2. 놀이 고르기</h3><small>틀린 단어는 오답 노트에 모여요</small></div>
+      <div class="sec-h"><h3>2. 놀이 고르기</h3><small>세트 옆 숫자는 외운 단어 수예요 · 틀린 단어는 오답 노트에 모여요</small></div>
       <div class="games" id="games"></div>
     </section>
 
@@ -267,10 +269,17 @@ function toast(msg){let t=$('.toast');if(!t){t=document.createElement('div');t.c
 function addStars(n){S.stars+=n;save();$('#starCount').textContent=S.stars}
 function markWrong(x){S.wrong[x.w]=(S.wrong[x.w]||0)+1;save()}
 function markRight(x){if(S.wrong[x.w]){delete S.wrong[x.w];save()}}
+/* 무작위 30개 세트: 고정된 씨앗값으로 섞어서 매번 같은 세트가 나와요 */
+const SET_SIZE=30;let SETS=[];
+function makeSets(){let a=1795417641>>>0;const rnd=()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296};
+  const arr=W.slice();for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+  SETS=[];for(let i=0;i<arr.length;i+=SET_SIZE)SETS.push(arr.slice(i,i+SET_SIZE));
+  [...sel].forEach(k=>{if(k!=='wrong'&&!SETS[+k-1])sel.delete(k)});S.sel=[...sel];save()}
+const selSets=()=>[...sel].filter(k=>k!=='wrong').map(Number).sort((a,b)=>a-b);
 function pool(){
   if(sel.has('wrong')) return W.filter(x=>S.wrong[x.w]);
   if(!sel.size) return W;
-  return W.filter(x=>sel.has(x.w[0].toUpperCase()));
+  return selSets().flatMap(k=>SETS[k-1]||[]);
 }
 function need(n){const p=pool();if(p.length>=n)return p;
   if(p.length<n) toast(sel.has('wrong')&&!p.length?'오답 노트가 비어 있어서 전체 단어로 놀아요':'단어가 모자라서 다른 단어도 조금 섞었어요');
@@ -333,14 +342,14 @@ function renderHome(){
   $('#stKnown').textContent=Object.keys(S.known).length;
   $('#stWrong').textContent=Object.keys(S.wrong).length;
   $('#stAll').textContent=W.length||750;
-  const counts={};W.forEach(x=>{const k=x.w[0].toUpperCase();counts[k]=(counts[k]||0)+1});
   const nWrong=Object.keys(S.wrong).length;
   let h=`<button class="chip ${!sel.size?'on':''}" data-k="all">전체<small>${W.length}</small></button>`;
-  h+=Object.keys(counts).sort().map(k=>`<button class="chip ${sel.has(k)?'on':''}" data-k="${k}">${k}<small>${counts[k]}</small></button>`).join('');
+  h+=SETS.map((set,i)=>{const k=String(i+1);const kn=set.filter(x=>S.known[x.w]).length;const full=kn===set.length;
+    return `<button class="chip set ${sel.has(k)?'on':''} ${full?'full':''}" data-k="${k}" title="외운 단어 ${kn}/${set.length}">${k}세트<small>${kn}/${set.length}</small></button>`}).join('');
   h+=`<button class="chip wrongchip ${sel.has('wrong')?'on':''}" data-k="wrong">오답 노트<small>${nWrong}</small></button>`;
   $('#chips').innerHTML=h;
   const p=pool();
-  $('#selInfo').textContent=sel.has('wrong')?`틀렸던 단어 ${p.length}개로 복습해요`:!sel.size?`전체 ${W.length}개 단어로 놀아요`:`${[...sel].sort().join(', ')} 단어 ${p.length}개로 놀아요`;
+  $('#selInfo').textContent=sel.has('wrong')?`틀렸던 단어 ${p.length}개로 복습해요`:!sel.size?`전체 ${W.length}개 단어로 놀아요`:`${selSets().map(k=>k+'세트').join(', ')} 단어 ${p.length}개로 놀아요`;
   $('#games').innerHTML=GAMES.map(g=>`<button class="tile ${g.cls}" data-g="${g.id}">${ICONS[g.id]}<h3>${g.name}</h3><p>${g.desc}</p>${S.best[g.id]!=null?`<span class="best">최고 기록: ${esc(S.best[g.id])}</span>`:''}</button>`).join('');
 }
 $('#chips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const k=c.dataset.k;
@@ -524,7 +533,7 @@ function Speed(){
 
 /* ---------- boot ---------- */
 renderSound();renderHome();
-function boot(d){W=d;renderHome()}
+function boot(d){W=d;makeSets();renderHome()}
 if(window.WORDS)boot(window.WORDS);
 else fetch('words.json').then(r=>r.json()).then(boot).catch(()=>{$('#selInfo').textContent='단어 목록을 불러오지 못했어요. 페이지를 새로고침해 주세요.'});
 })();
