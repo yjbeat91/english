@@ -194,7 +194,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
       <div class="stats">
         <div class="stat"><b id="stKnown">0</b><span>외운 단어</span></div>
         <div class="stat"><b id="stWrong">0</b><span>오답 노트</span></div>
-        <div class="stat"><b id="stAll">507</b><span>전체 단어</span></div>
+        <div class="stat"><b id="stAll">750</b><span>전체 단어</span></div>
       </div>
     </section>
 
@@ -208,7 +208,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
       <div class="games" id="games"></div>
     </section>
 
-    <p class="foot">교재 단어 목록(A–P, U–W) 507개 · 예문은 초등학교 6학년 수준 · 진도는 이 기기에만 저장돼요</p>
+    <p class="foot">교재 단어 목록(A–W) 750개 · 예문은 초등학교 6학년 수준 · 진도는 이 기기에만 저장돼요</p>
   </main>
 
   <main id="game" hidden>
@@ -332,7 +332,7 @@ function renderHome(){
   $('#starCount').textContent=S.stars;
   $('#stKnown').textContent=Object.keys(S.known).length;
   $('#stWrong').textContent=Object.keys(S.wrong).length;
-  $('#stAll').textContent=W.length||507;
+  $('#stAll').textContent=W.length||750;
   const counts={};W.forEach(x=>{const k=x.w[0].toUpperCase();counts[k]=(counts[k]||0)+1});
   const nWrong=Object.keys(S.wrong).length;
   let h=`<button class="chip ${!sel.size?'on':''}" data-k="all">전체<small>${W.length}</small></button>`;
