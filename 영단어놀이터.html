@@ -382,15 +382,32 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let sel=new Set(S.sel||[]);
 
 /* ---------- sound & speech ---------- */
-let ac=null;
-function tone(notes){ if(!S.sound) return;
-  try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); let t=ac.currentTime;
-    notes.forEach(([f,d,type])=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.value=f;
-      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.18,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);
-      o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02);t+=d*.8});
-  }catch(e){} }
-const sfx={ok:()=>tone([[660,.12],[880,.18]]),no:()=>tone([[220,.22,'triangle']]),flip:()=>tone([[520,.06,'triangle']]),
-  win:()=>tone([[523,.14],[659,.14],[784,.14],[1047,.3]])};
+/* 효과음: 정답은 맑은 종소리 "딩동댕", 연속으로 맞히면 음이 점점 올라가고 3연속부터 반짝 소리가 더해져요 */
+let ac=null,master=null,streak=0;
+function actx(){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ac=new C();master=ac.createGain();master.gain.value=.55;
+    const comp=ac.createDynamicsCompressor();master.connect(comp);comp.connect(ac.destination)}
+  if(ac.state==='suspended')ac.resume();return ac}
+addEventListener('pointerdown',()=>{if(S.sound)try{actx()}catch(e){}},{passive:true});
+function note(f,t,d,o){o=o||{};const g=ac.createGain(),osc=ac.createOscillator();osc.type=o.type||'sine';osc.frequency.setValueAtTime(f,t);
+  if(o.glide)osc.frequency.exponentialRampToValueAtTime(o.glide,t+d);const v=o.vol||.3;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+(o.attack||.006));g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  osc.connect(g);g.connect(master);osc.start(t);osc.stop(t+d+.05)}
+function bell(f,t,d,v){note(f,t,d,{vol:v});note(f*2,t,d*.6,{vol:v*.35});note(f*3.01,t,d*.35,{vol:v*.15,type:'triangle'})}
+function play(fn){if(!S.sound)return;try{const c=actx();if(c)fn(c.currentTime+.02)}catch(e){}}
+const semi=n=>Math.pow(2,n/12);
+const sfx={
+  ok:()=>{streak++;const up=semi(Math.min(streak-1,10)),base=[523.25,587.33,659.25][Math.random()*3|0]*up;
+    play(t=>{bell(base,t,.22,.26);bell(base*semi(4),t+.07,.22,.24);bell(base*semi(7),t+.14,.5,.28);
+      if(streak>=3)for(let i=0;i<5;i++)note(base*4*semi(i*3),t+.24+i*.045,.14,{vol:.07,type:'triangle'})})},
+  no:()=>{streak=0;play(t=>{note(330,t,.2,{type:'triangle',vol:.2,glide:262});note(262,t+.17,.32,{type:'triangle',vol:.18,glide:196})})},
+  flip:()=>play(t=>note(880,t,.07,{type:'triangle',vol:.1,glide:1250})),
+  coin:()=>play(t=>{note(988,t,.08,{type:'square',vol:.09});note(1319,t+.08,.4,{type:'square',vol:.09})}),
+  win:stars=>{stars=stars||2;play(t=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>bell(f,t+i*.12,.35,.24));
+    if(stars>=2){bell(783.99,t+.56,.6,.18);bell(1046.5,t+.56,.8,.24);bell(1318.5,t+.56,.9,.18)}
+    if(stars>=3)for(let i=0;i<10;i++)note(2093*semi((i%5)*2),t+.95+i*.05,.16,{vol:.06,type:'triangle'})})},
+  badge:()=>play(t=>{[784,988,1175,1568].forEach((f,i)=>bell(f,t+i*.09,.45,.22));for(let i=0;i<6;i++)note(2637*semi(i),t+.42+i*.045,.12,{vol:.05,type:'triangle'})}),
+  reset:()=>{streak=0}
+};
 const canSpeak='speechSynthesis' in window;
 function speak(t){ if(!canSpeak) return; try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}catch(e){} }
 const ICON_SAY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -594,8 +611,8 @@ function confetti(){ if(reduced) return; const c=$('#fx');c.hidden=false;const x
 
 /* ---------- result ---------- */
 function result({title,stars,line,again,best,rec,ctx}){
-  addStars(stars);S.played=(S.played||0)+1;save();if(stars>=2)confetti();sfx.win();
-  const improved=rec?keepRec(rec):false;const got=checkBadges(ctx||{});
+  addStars(stars);S.played=(S.played||0)+1;save();if(stars>=2)confetti();sfx.win(stars);
+  const improved=rec?keepRec(rec):false;const got=checkBadges(ctx||{});if(got.length)setTimeout(sfx.badge,1500);
   const ov=document.createElement('div');ov.className='ov';
   const st=[1,2,3].map(i=>STAR.replace('FILL',i<=stars?'#FFC83D':'none').replace('STROKE',i<=stars?'#C98F00':'currentColor')).join('');
   const msg=stars===3?'최고예요! 완벽해요!':stars===2?'아주 잘했어요!':'좋아요, 한 번 더 해 볼까요?';
@@ -617,7 +634,7 @@ function result({title,stars,line,again,best,rec,ctx}){
 let cleanup=null;
 function goHome(){ curScreen=''; if(cleanup){cleanup();cleanup=null} if(canSpeak)try{speechSynthesis.cancel()}catch(e){}
   $('#game').hidden=true;$('#home').hidden=false;renderHome();scrollTo(0,0)}
-function openGame(id){if(!W.length){toast('단어를 불러오는 중이에요. 잠시만 기다려 주세요');return}const g=GAMES.find(g=>g.id===id);enterSub();curScreen='game';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent=g.name;$('#hud').innerHTML='';
+function openGame(id){if(!W.length){toast('단어를 불러오는 중이에요. 잠시만 기다려 주세요');return}const g=GAMES.find(g=>g.id===id);enterSub();sfx.reset();curScreen='game';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent=g.name;$('#hud').innerHTML='';
   if(cleanup){cleanup();cleanup=null} g.run();scrollTo(0,0)}
 $('#backBtn').onclick=()=>toHome();
 /* ---------- 휴대폰 뒤로 가기: 한 번 누르면 이전(처음) 화면, 처음 화면에서 두 번 누르면 종료 ---------- */
@@ -699,8 +716,8 @@ function Cards(){
     f.onkeydown=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();f.click()}};
     $('#prev').onclick=()=>{if(i>0){i--;draw()}};
     $('#next').onclick=()=>{i=(i+1)%list.length;draw()};
-    $('#know').onclick=()=>{if(S.known[x.w])delete S.known[x.w];else{S.known[x.w]=1;addStars(1);sfx.ok();
-        const got=checkBadges({});if(got.length){confetti();toast('새 칭호를 얻었어요! 「'+got.map(b=>b.name).join('」「')+'」')}}save();
+    $('#know').onclick=()=>{if(S.known[x.w])delete S.known[x.w];else{S.known[x.w]=1;addStars(1);sfx.coin();
+        const got=checkBadges({});if(got.length){confetti();setTimeout(sfx.badge,300);toast('새 칭호를 얻었어요! 「'+got.map(b=>b.name).join('」「')+'」')}}save();
       if(!S.known[x.w])draw();else{i=(i+1)%list.length;draw()}};
   }
   const key=e=>{if(e.key==='ArrowRight')$('#next')?.click();if(e.key==='ArrowLeft')$('#prev')?.click()};
