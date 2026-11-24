@@ -26,7 +26,7 @@
 *{box-sizing:border-box}
 html{font-size:18px;-webkit-text-size-adjust:100%}
 @media (max-width:480px){html{font-size:19px}}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1rem;line-height:1.55;
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1rem;line-height:1.55;word-break:keep-all;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 button:focus-visible,.chip:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
@@ -62,6 +62,29 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance
 .chip.on small{color:var(--bg);opacity:.8}
 .chip.set{font-family:var(--f-display);font-weight:400}
 .chip.full:not(.on){border-color:var(--leaf);background:var(--ok-bg)}
+/* home: compact layout */
+#home .hello{padding:16px;gap:10px}
+#home .hello h2{font-size:1.2rem}
+#home .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#home .stat{min-width:0;padding:6px 10px}
+#home .stat b{font-size:1.2rem}
+#home .stat span{font-size:.78rem;white-space:nowrap}
+#home .sec{margin-top:20px;gap:10px}
+#home .sec-h h3{font-size:1.1rem}
+#home .sec-h small{font-size:.8rem}
+#chips{display:grid;gap:8px}
+.chips-top{display:flex;flex-wrap:wrap;gap:8px}
+#home .chip{font-size:.95rem;padding:5px 12px;min-height:40px;align-items:center}
+.setgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#home .chip.set{flex-direction:column;justify-content:center;gap:0;padding:5px 2px;min-height:0;line-height:1.2;font-size:.9rem;white-space:nowrap}
+#home .chip.set small{font-size:.7rem}
+#home .games{gap:10px}
+#home .tile{padding:12px;gap:4px}
+#home .tile svg{width:38px;height:38px}
+#home .tile h3{font-size:1.1rem}
+#home .tile p{font-size:.85rem}
+#home .tile .best{font-size:.78rem}
+#home .foot{font-size:.8rem}
 .chip.wrongchip{font-family:var(--f-display);font-weight:400}
 .chip.wrongchip.on{background:var(--coral);border-color:var(--coral);color:var(--on-color)}
 .chip.wrongchip.on small{color:var(--on-color)}
@@ -209,7 +232,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
     </section>
 
     <section class="sec">
-      <div class="sec-h"><h3>2. 놀이 고르기</h3><small>세트 옆 숫자는 외운 단어 수예요 · 틀린 단어는 오답 노트에 모여요</small></div>
+      <div class="sec-h"><h3>2. 놀이 고르기</h3><small>틀린 단어는 오답 노트에 모여요</small></div>
       <div class="games" id="games"></div>
     </section>
 
@@ -347,10 +370,10 @@ function renderHome(){
   $('#stWrong').textContent=Object.keys(S.wrong).length;
   $('#stAll').textContent=W.length||750;
   const nWrong=Object.keys(S.wrong).length;
-  let h=`<button class="chip ${!sel.size?'on':''}" data-k="all">전체<small>${W.length}</small></button>`;
+  let h=`<div class="chips-top"><button class="chip ${!sel.size?'on':''}" data-k="all">전체<small>${W.length}</small></button>`;
+  h+=`<button class="chip wrongchip ${sel.has('wrong')?'on':''}" data-k="wrong">오답 노트<small>${nWrong}</small></button></div><div class="setgrid">`;
   h+=SETS.map((set,i)=>{const k=String(i+1);const kn=set.filter(x=>S.known[x.w]).length;const full=kn===set.length;
-    return `<button class="chip set ${sel.has(k)?'on':''} ${full?'full':''}" data-k="${k}" title="외운 단어 ${kn}/${set.length}">${k}세트<small>${kn}/${set.length}</small></button>`}).join('');
-  h+=`<button class="chip wrongchip ${sel.has('wrong')?'on':''}" data-k="wrong">오답 노트<small>${nWrong}</small></button>`;
+    return `<button class="chip set ${sel.has(k)?'on':''} ${full?'full':''}" data-k="${k}" title="외운 단어 ${kn}/${set.length}">${k}세트<small>${kn}/${set.length}</small></button>`}).join('')+'</div>';
   $('#chips').innerHTML=h;
   const p=pool();
   $('#selInfo').textContent=sel.has('wrong')?`틀렸던 단어 ${p.length}개로 복습해요`:!sel.size?`전체 ${W.length}개 단어로 놀아요`:`${selSets().map(k=>k+'세트').join(', ')} 단어 ${p.length}개로 놀아요`;
