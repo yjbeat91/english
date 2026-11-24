@@ -85,6 +85,38 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance
 #home .tile p{font-size:.85rem}
 #home .tile .best{font-size:.78rem}
 #home .foot{font-size:.8rem}
+.row.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:560px;margin:0 auto;width:100%}
+.row3 .btn{padding:10px 4px;white-space:nowrap;font-size:1.05rem}
+#home .acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#home .hbtn{justify-content:center;padding:8px 6px;white-space:nowrap}
+.en.long{font-size:.95rem}
+.en.xlong{font-size:.8rem}
+.node.en,.opt.en,.mc .f.t.en{overflow-wrap:normal;word-break:normal;white-space:nowrap}
+.rkrow .rkchip{font-size:.85rem;padding:3px 8px}
+@media (max-width:480px){
+  .top{padding-block:12px 8px;gap:8px}
+  .logo{gap:8px}
+  .logo h1{font-size:1.3rem;white-space:nowrap}
+  .logo-mark{width:32px;height:32px}
+  .pill{padding:3px 10px;font-size:.95rem}
+  .iconbtn{width:38px;height:38px}
+  #game .ghead{flex-wrap:nowrap;gap:6px;padding-block:2px 10px}
+  #game .ghead h2{font-size:1.1rem;overflow:hidden;text-overflow:ellipsis;flex:1 1 0}
+  #game .ghead .hud{flex:none;flex-basis:auto;gap:4px;flex-wrap:nowrap}
+  #game .ghead .hud .pill{font-size:.8rem;padding:3px 7px}
+  .cx{column-gap:24px}
+  .node{padding:10px 6px}
+  .opt{padding:12px 6px}
+  .back{padding:4px 12px;font-size:1.1rem;flex:none}
+  .bk-t{display:none}
+  .res{padding:20px 16px;gap:10px}
+  .res h3{font-size:1.5rem}
+  .res .stars svg{width:48px;height:48px}
+  .mc,.mc .f{min-height:92px}
+  .face{min-height:230px}
+  .rlist li{padding:6px 8px;gap:8px;grid-template-columns:34px minmax(0,1fr) auto}
+  .rk-n{width:32px;height:32px}
+}
 .chip.wrongchip{font-family:var(--f-display);font-weight:400}
 .chip.wrongchip.on{background:var(--coral);border-color:var(--coral);color:var(--on-color)}
 .chip.wrongchip.on small{color:var(--on-color)}
@@ -139,7 +171,9 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 /* memory */
 .mem{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media (max-width:520px){.mem{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.mc{perspective:800px;min-height:104px}
+.mc{perspective:800px;min-height:104px;min-width:0}
+.mc .in,.mc .f{min-width:0}
+.mc .f.t.en{overflow:hidden}
 .mc .in{display:grid;height:100%;transition:transform .4s;transform-style:preserve-3d}
 .mc.open .in,.mc.done .in{transform:rotateY(180deg)}
 .mc .f{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:grid;place-items:center;padding:8px;text-align:center;min-height:104px}
@@ -291,7 +325,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 
   <main id="game" hidden>
     <div class="ghead">
-      <button class="back" id="backBtn">← 놀이 고르기</button>
+      <button class="back" id="backBtn" aria-label="처음으로"><span aria-hidden="true">←</span><span class="bk-t"> 처음으로</span></button>
       <h2 id="gTitle"></h2>
       <div class="hud" id="hud"></div>
     </div>
@@ -365,6 +399,12 @@ function exHTML(x,mode){const [a,b]=x.b, e=x.e;
   const mid=mode==='blank'?'<span class="blank" id="blank">&nbsp;</span>':`<mark>${esc(e.slice(a,b))}</mark>`;
   return esc(e.slice(0,a))+mid+esc(e.slice(b))}
 const STAR='<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" fill="FILL" stroke="STROKE" stroke-width="1.2"/></svg>';
+/* 긴 영어 단어가 칸을 넘치면 글씨를 조금씩 줄여서 한 줄에 맞춰요 */
+function fitText(root){(root||document).querySelectorAll('.node.en,.opt.en,.mc .f.t.en').forEach(el=>{el.style.fontSize='';
+  el.style.whiteSpace='';el.style.overflowWrap='';let fs=parseFloat(getComputedStyle(el).fontSize);while(el.scrollWidth>el.clientWidth+1&&fs>12){fs-=1;el.style.fontSize=fs+'px'}
+  if(el.scrollWidth>el.clientWidth+1){el.style.whiteSpace='normal';el.style.overflowWrap='anywhere'}})}
+addEventListener('resize',()=>fitText($('#stage')));
+const lenCls=w=>w.length>=12?'xlong':w.length>=9?'long':'';
 const pillHTML=(id,label)=>`<span class="pill" id="${id}">${label}</span>`;
 /* ===== 공용 규칙 (앱과 구글 Apps Script가 똑같이 사용해요) ===== */
 var GAME_IDS=['cards','memory','connect','cloze','spell','speed'];
@@ -392,7 +432,8 @@ function makeBoard(rows,game,period,pid,now,limit){
 /* ===================== 닉네임 · 랭킹 · 칭호 ===================== */
 /* 구글 스프레드시트 랭킹 주소: Apps Script 배포 후 받은 웹 앱 URL을 따옴표 안에 넣어요. 비워 두면 이 기기 안에서만 랭킹을 보여줘요. */
 const RANK_URL='https://script.google.com/macros/s/AKfycbw2RFiL6W5Wep0dQjXlkVEZ8En_2monCR3mIhu5esKM0eDSXt4nQLLN_MrPeKtfN8Ty/exec';
-const ONLINE=!!RANK_URL;
+/* 학생용 GitHub 주소(또는 내려받은 파일)에서만 구글 시트에 연결해요. Claude 앱 미리보기는 외부 연결이 막혀 있어서 기기 안 랭킹을 써요. */
+const ONLINE=!!RANK_URL&&(/github\.io$/.test(location.hostname)||location.protocol==='file:'||location.hostname==='localhost');
 const GAME_NAME={cards:'단어 카드',memory:'짝짓기',connect:'선 연결하기',cloze:'빈칸 채우기',spell:'철자 퍼즐',speed:'번개 퀴즈'};
 const GAME_RULE={cards:'외운 단어가 많은 순',memory:'시도 횟수가 적은 순 · 같으면 빠른 순',connect:'실수가 적은 순 · 같으면 빠른 순',
   cloze:'맞힌 문제가 많은 순 · 같으면 빠른 순',spell:'맞힌 단어가 많은 순 · 힌트가 적은 순 · 같으면 빠른 순',speed:'점수가 높은 순'};
@@ -530,7 +571,7 @@ function result({title,stars,line,again,best,rec,ctx}){
     ${rec?`<div class="rkbox"><div><b>${esc(S.nick||'')}</b>님 기록: ${esc(rec.label)}${improved?' <span class="newrec">최고 기록!</span>':''}</div>
       <div class="rkrow" id="rRanks"><span class="muted">순위를 확인하는 중…</span></div></div>`:''}
     ${got.length?`<div class="newb">새 칭호를 얻었어요! ${got.map(b=>'「'+esc(b.name)+'」').join(' ')}</div>`:''}
-    <div class="row"><button class="btn main" id="rAgain">한 번 더</button><button class="btn" id="rRankBtn">랭킹 보기</button><button class="btn" id="rHome">놀이 고르기</button></div></div>`;
+    <div class="row row3"><button class="btn main" id="rAgain">한 번 더</button><button class="btn" id="rRankBtn">랭킹</button><button class="btn" id="rHome">처음으로</button></div></div>`;
   document.body.appendChild(ov);
   $('#rAgain').onclick=()=>{ov.remove();again()};$('#rHome').onclick=()=>{ov.remove();goHome()};$('#rAgain').focus();
   $('#rRankBtn').onclick=()=>{ov.remove();RankPage(rec?rec.game:'speed','week')};
@@ -601,7 +642,7 @@ function Cards(){
         <div class="face front"><div class="big en">${esc(x.w)}</div><div>${sayBtn(x.w)}</div><div class="tap">카드를 누르면 뜻이 나와요</div></div>
         <div class="face back"><div class="mean">${esc(x.m)}</div><div class="ex">${exHTML(x)}</div><div class="muted">${esc(x.t)}</div><div>${sayBtn(x.e)}</div></div>
       </div></div>
-    <div class="row">
+    <div class="row row3">
       <button class="btn" id="prev" ${i===0?'disabled':''}>◀ 이전</button>
       <button class="btn ${known?'known-on':''}" id="know">${known?'외웠어요 ✓':'외웠어요'}</button>
       <button class="btn main" id="next">${i===list.length-1?'처음으로':'다음 ▶'}</button>
@@ -629,6 +670,7 @@ function Memory(){
   hud();
   $('#stage').innerHTML=`<p class="muted" style="margin:0 0 12px;text-align:center">카드 두 장을 뒤집어 영어 단어와 뜻의 짝을 찾아요</p>
    <div class="mem">${cards.map((c,k)=>`<button class="mc" data-k="${k}" aria-label="카드 ${k+1}"><div class="in"><div class="f b"></div><div class="f t ${c.en?'en':''}">${esc(c.txt)}</div></div></button>`).join('')}</div>`;
+  fitText($('#stage'));
   $('#stage').querySelector('.mem').onclick=e=>{const b=e.target.closest('.mc');if(!b||lock)return;const k=+b.dataset.k;
     if(b.classList.contains('open')||b.classList.contains('done'))return;
     b.classList.add('open');sfx.flip();if(cards[k].en)speak(cards[k].txt);open.push(b);
@@ -651,7 +693,7 @@ function Connect(){
     $('#stage').innerHTML=`<div class="bar"><i style="width:${r/ROUNDS*100}%"></i></div>
       <p class="muted" style="margin:0 0 12px;text-align:center">왼쪽 영어 단어를 누르고, 알맞은 뜻을 눌러 선으로 이어요</p>
       <div class="cx" id="cx"><svg id="cxs" aria-hidden="true"></svg>
-      ${L.map((x,k)=>`<button class="node en" style="grid-column:1;grid-row:${k+1}" data-s="L" data-w="${esc(x.w)}">${esc(x.w)}</button>`).join('')}
+      ${L.map((x,k)=>`<button class="node en ${lenCls(x.w)}" style="grid-column:1;grid-row:${k+1}" data-s="L" data-w="${esc(x.w)}">${esc(x.w)}</button>`).join('')}
       ${R.map((x,k)=>`<button class="node" style="grid-column:2;grid-row:${k+1}" data-s="R" data-w="${esc(x.w)}">${esc(short(x.m))}</button>`).join('')}
       </div>`;
     $('#cx').onclick=e=>{const n=e.target.closest('.node');if(!n||n.classList.contains('ok'))return;
@@ -667,7 +709,7 @@ function Connect(){
         $('#ms').textContent=`실수 ${miss}`;
         setTimeout(()=>{a.classList.remove('no','shake');b.classList.remove('no','shake');lines=lines.filter(l=>l!==tmp);drawLines()},700)}
     };
-    requestAnimationFrame(drawLines);
+    fitText($('#stage'));requestAnimationFrame(drawLines);
   }
   function drawLines(){const cx=$('#cx'),sv=$('#cxs');if(!cx||!sv)return;const o=cx.getBoundingClientRect();
     sv.innerHTML=lines.map(([a,b,s])=>{const A=a.getBoundingClientRect(),B=b.getBoundingClientRect();
@@ -687,9 +729,10 @@ function Cloze(){
     $('#stage').innerHTML=`<div class="bar"><i style="width:${i/Q*100}%"></i></div>
       <div class="sent">${exHTML(x,'blank')}</div>
       <div class="ko" id="ko"><button class="btn" id="hint" style="font-size:1rem;padding:8px 14px">우리말 힌트 보기</button></div>
-      <div class="opts">${opts.map(o=>`<button class="opt en" data-w="${esc(o.w)}">${esc(o.w)}</button>`).join('')}</div>
+      <div class="opts">${opts.map(o=>`<button class="opt en ${lenCls(o.w)}" data-w="${esc(o.w)}">${esc(o.w)}</button>`).join('')}</div>
       <div class="note" id="note">${changed?'<span class="muted" style="font-family:var(--f-body);font-size:.95rem">힌트: 빈칸에서는 단어 모양이 조금 바뀌어요 (예: -s, -ed)</span>':''}</div>
       <div class="row" style="margin-top:8px"><button class="btn main" id="nx" hidden>${i===Q-1?'결과 보기':'다음 문제 ▶'}</button></div>`;
+    fitText($('#stage'));
     $('#hint').onclick=()=>{$('#ko').textContent=x.t};
     const box=$('#stage').querySelector('.opts');
     box.onclick=e=>{const b=e.target.closest('.opt');if(!b||box.dataset.done)return;box.dataset.done=1;
@@ -715,7 +758,7 @@ function Spell(){
       <div class="clue"><div class="mean">${esc(x.m)}</div><div class="muted">${esc(x.t)}</div><div>${sayBtn(x.w)}</div></div>
       <div class="slots" id="slots"></div><div class="tiles" id="tiles"></div>
       <div class="note" id="note"></div>
-      <div class="row"><button class="btn" id="hint">힌트</button><button class="btn" id="clr">지우기</button><button class="btn" id="skip">모르겠어요</button></div>`;
+      <div class="row row3"><button class="btn" id="hint">힌트</button><button class="btn" id="clr">지우기</button><button class="btn" id="skip">모르겠어요</button></div>`;
     function paint(){
       $('#slots').innerHTML=slots.map((s,k)=>`<button class="slot ${s?'f':''}" data-k="${k}">${s?esc(letters[s.t]):''}</button>`).join('');
       const used=new Set(slots.filter(Boolean).map(s=>s.t));
