@@ -522,6 +522,7 @@ function boardHTML(b){
   else if(!b.me)h+=`<p class="rk-mine muted">아직 이 기간에 내 기록이 없어요</p>`;
   return h}
 function RankPage(game,period){
+  enterSub();
   curScreen='rank';game=game||'speed';period=period||'week';
   $('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent='랭킹';$('#hud').innerHTML='';if(cleanup){cleanup();cleanup=null}
   $('#stage').innerHTML=`<div class="tabs" id="gtabs">${GAME_IDS.map(g=>`<button class="tab ${g===game?'on':''}" data-g="${g}">${GAME_NAME[g]}</button>`).join('')}</div>
@@ -539,6 +540,7 @@ function RankPage(game,period){
 
 /* --- 내 정보 · 칭호 화면 --- */
 function MePage(){
+  enterSub();
   curScreen='me';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent='내 정보';$('#hud').innerHTML='';if(cleanup){cleanup();cleanup=null}
   const n=Object.keys(S.badges).length;
   $('#stage').innerHTML=`<div class="me-top"><div><div class="me-nick">${esc(S.nick||'')}</div><div class="muted">${titleName()?'대표 칭호: '+esc(titleName()):'칭호를 얻으면 닉네임 옆에 보여요'}</div></div>
@@ -573,7 +575,7 @@ function result({title,stars,line,again,best,rec,ctx}){
     ${got.length?`<div class="newb">새 칭호를 얻었어요! ${got.map(b=>'「'+esc(b.name)+'」').join(' ')}</div>`:''}
     <div class="row row3"><button class="btn main" id="rAgain">한 번 더</button><button class="btn" id="rRankBtn">랭킹</button><button class="btn" id="rHome">처음으로</button></div></div>`;
   document.body.appendChild(ov);
-  $('#rAgain').onclick=()=>{ov.remove();again()};$('#rHome').onclick=()=>{ov.remove();goHome()};$('#rAgain').focus();
+  $('#rAgain').onclick=()=>{ov.remove();again()};$('#rHome').onclick=()=>{ov.remove();toHome()};$('#rAgain').focus();
   $('#rRankBtn').onclick=()=>{ov.remove();RankPage(rec?rec.game:'speed','week')};
   if(rec)submitRec(rec).then(r=>{const el=$('#rRanks');if(!el)return;
       el.innerHTML=['today','week','all'].map(p=>{const k=r.ranks[p];return `<span class="rkchip">${PERIOD_NAME[p]} <b>${k.rank?k.rank+'위':'-'}</b> / ${k.total}명</span>`}).join('')+'<span class="muted" style="width:100%;font-size:.8rem">내 최고 기록 기준 순위예요</span>'})
@@ -584,9 +586,25 @@ function result({title,stars,line,again,best,rec,ctx}){
 let cleanup=null;
 function goHome(){ curScreen=''; if(cleanup){cleanup();cleanup=null} if(canSpeak)try{speechSynthesis.cancel()}catch(e){}
   $('#game').hidden=true;$('#home').hidden=false;renderHome();scrollTo(0,0)}
-function openGame(id){if(!W.length){toast('단어를 불러오는 중이에요. 잠시만 기다려 주세요');return}const g=GAMES.find(g=>g.id===id);curScreen='game';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent=g.name;$('#hud').innerHTML='';
+function openGame(id){if(!W.length){toast('단어를 불러오는 중이에요. 잠시만 기다려 주세요');return}const g=GAMES.find(g=>g.id===id);enterSub();curScreen='game';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent=g.name;$('#hud').innerHTML='';
   if(cleanup){cleanup();cleanup=null} g.run();scrollTo(0,0)}
-$('#backBtn').onclick=goHome;
+$('#backBtn').onclick=()=>toHome();
+/* ---------- 휴대폰 뒤로 가기: 한 번 누르면 이전(처음) 화면, 처음 화면에서 두 번 누르면 종료 ---------- */
+const hs=()=>{try{return history.state&&history.state.s}catch(e){return null}};
+function enterSub(){try{if(hs()==='sub')history.replaceState({s:'sub'},'');else history.pushState({s:'sub'},'')}catch(e){}}
+function toHome(){if(hs()==='sub'){try{history.back();return}catch(e){}}closeOverlays();goHome()}
+function closeOverlays(){document.querySelectorAll('.ov').forEach(o=>{if(!o.querySelector('#nickForm')||S.nick)o.remove()})}
+let lastBack=0;
+try{history.replaceState({s:'root'},'');history.pushState({s:'home'},'')}catch(e){}
+addEventListener('popstate',e=>{const st=e.state&&e.state.s;
+  if(st==='home'){closeOverlays();if(!$('#game').hidden)goHome();return}
+  if(st==='root'){
+    if(!$('#game').hidden||document.querySelector('.ov')){closeOverlays();if(!$('#game').hidden)goHome();try{history.pushState({s:'home'},'')}catch(err){}return}
+    const now=Date.now();
+    if(now-lastBack<2000){try{history.back()}catch(err){}return}
+    lastBack=now;toast('뒤로 가기를 한 번 더 누르면 앱이 꺼져요');try{history.pushState({s:'home'},'')}catch(err){}
+  }
+});
 $('#rankBtn').onclick=()=>RankPage('speed','week');
 $('#meBtn').onclick=()=>MePage();
 
