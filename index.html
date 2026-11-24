@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>영단어 놀이터</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +24,9 @@
   --ok:#4BD08A; --ok-bg:#173A2A; --bad:#FF7A7F; --bad-bg:#40202352; --hi:#4A4220;
   --shadow:0 3px 0 rgba(0,0,0,.35); color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+html{font-size:18px;-webkit-text-size-adjust:100%}
+@media (max-width:480px){html{font-size:19px}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1rem;line-height:1.55;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 button:focus-visible,.chip:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
@@ -47,14 +50,14 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance
 .stats{display:flex;flex-wrap:wrap;gap:10px}
 .stat{background:rgba(255,255,255,.6);border-radius:14px;padding:8px 14px;min-width:96px}
 .stat b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.5rem;line-height:1.1;font-variant-numeric:tabular-nums}
-.stat span{font-size:.85rem}
+.stat span{font-size:.95rem}
 .sec{margin-top:26px;display:grid;gap:12px}
 .sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .sec-h h3{font-size:1.3rem}
 .sec-h small{color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;display:inline-flex;align-items:baseline;gap:6px;font-family:var(--f-en);font-weight:600;font-size:1.05rem;cursor:pointer;user-select:none}
-.chip small{font-family:var(--f-body);font-weight:400;font-size:.78rem;color:var(--muted)}
+.chip{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 14px;min-height:44px;display:inline-flex;align-items:baseline;gap:6px;font-family:var(--f-en);font-weight:600;font-size:1.05rem;cursor:pointer;user-select:none}
+.chip small{font-family:var(--f-body);font-weight:400;font-size:.85rem;color:var(--muted)}
 .chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .chip.on small{color:var(--bg);opacity:.8}
 .chip.set{font-family:var(--f-display);font-weight:400}
@@ -69,11 +72,11 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance
 .tile:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
 .tile svg{width:46px;height:46px}
 .tile h3{font-size:1.3rem}
-.tile p{margin:0;font-size:.9rem;line-height:1.4}
-.tile .best{font-size:.8rem;opacity:.85}
+.tile p{margin:0;font-size:.98rem;line-height:1.4}
+.tile .best{font-size:.9rem;opacity:.9}
 .t-cards{background:var(--sun)} .t-memory{background:var(--pink)} .t-connect{background:var(--sky)}
 .t-cloze{background:var(--leaf)} .t-spell{background:#FFA45B} .t-speed{background:var(--grape);color:#fff}
-.foot{margin-top:28px;color:var(--muted);font-size:.85rem}
+.foot{margin-top:28px;color:var(--muted);font-size:.92rem}
 
 /* game screen */
 .ghead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-block:6px 14px}
@@ -92,8 +95,8 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance
 .btn.main{background:var(--sky);border-color:var(--sky);color:#fff}
 .btn.go{background:var(--leaf);border-color:var(--leaf);color:var(--on-color)}
 .btn[disabled]{opacity:.4;pointer-events:none}
-.say{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--sky);color:#fff;flex:none;vertical-align:middle}
-.say svg{width:20px;height:20px}
+.say{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--sky);color:#fff;flex:none;vertical-align:middle}
+.say svg{width:24px;height:24px}
 .muted{color:var(--muted)}
 mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 
@@ -107,18 +110,18 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 .face .big{font-size:clamp(2.2rem,9vw,3.4rem);line-height:1.1;overflow-wrap:anywhere}
 .face .mean{font-family:var(--f-display);font-size:1.6rem}
 .face .ex{font-size:1.1rem;font-family:var(--f-en);font-weight:500}
-.tap{font-size:.85rem;opacity:.75}
+.tap{font-size:.95rem;opacity:.8}
 .known-on{background:var(--ok);border-color:var(--ok);color:var(--on-color)}
 
 /* memory */
 .mem{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media (max-width:520px){.mem{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.mc{perspective:800px;min-height:92px}
+.mc{perspective:800px;min-height:104px}
 .mc .in{display:grid;height:100%;transition:transform .4s;transform-style:preserve-3d}
 .mc.open .in,.mc.done .in{transform:rotateY(180deg)}
-.mc .f{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:grid;place-items:center;padding:8px;text-align:center;min-height:92px}
+.mc .f{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:grid;place-items:center;padding:8px;text-align:center;min-height:104px}
 .mc .f.b{background:var(--sky);background-image:radial-gradient(rgba(255,255,255,.28) 2px,transparent 2.5px);background-size:14px 14px;border:3px solid rgba(255,255,255,.35)}
-.mc .f.t{transform:rotateY(180deg);background:var(--surface-2);border:2px solid var(--line);font-size:1rem;line-height:1.3;overflow-wrap:anywhere}
+.mc .f.t{transform:rotateY(180deg);background:var(--surface-2);border:2px solid var(--line);font-size:1.02rem;line-height:1.3;overflow-wrap:anywhere}
 .mc .f.t.en{font-size:1.15rem}
 .mc.done .f.t{background:var(--ok-bg);border-color:var(--ok)}
 .mc.miss .f.t{background:var(--bad-bg);border-color:var(--bad)}
@@ -126,8 +129,8 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 /* connect */
 .cx{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:clamp(36px,10vw,110px);row-gap:12px}
 .cx svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.node{border:2px solid var(--line);background:var(--surface-2);border-radius:14px;padding:10px 12px;min-height:54px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;position:relative;z-index:1;overflow-wrap:anywhere}
-.node.en{font-size:1.15rem}
+.node{border:2px solid var(--line);background:var(--surface-2);border-radius:14px;padding:12px 10px;min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;position:relative;z-index:1;overflow-wrap:anywhere}
+.node.en{font-size:1.2rem}
 .node.sel{border-color:var(--sky);background:var(--hi)}
 .node.ok{border-color:var(--ok);background:var(--ok-bg);cursor:default}
 .node.no{border-color:var(--bad);background:var(--bad-bg)}
@@ -139,7 +142,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 .blank.no{color:var(--bad);border-color:var(--bad)}
 .ko{text-align:center;color:var(--muted);min-height:1.6em;margin-bottom:14px}
 .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:560px;margin:0 auto}
-.opt{border:2px solid var(--line);background:var(--surface-2);border-radius:14px;padding:12px 10px;font-size:1.15rem;box-shadow:var(--shadow);overflow-wrap:anywhere}
+.opt{border:2px solid var(--line);background:var(--surface-2);border-radius:14px;padding:14px 10px;min-height:60px;font-size:1.2rem;box-shadow:var(--shadow);overflow-wrap:anywhere}
 .opt.ok{background:var(--ok-bg);border-color:var(--ok)}
 .opt.no{background:var(--bad-bg);border-color:var(--bad)}
 .opt.ko-opt{font-family:var(--f-body);font-size:1.05rem}
@@ -151,7 +154,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 .clue .mean{font-family:var(--f-display);font-size:1.7rem}
 .slots,.tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .slot,.lt{width:44px;height:52px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-en);font-weight:600;font-size:1.5rem}
-@media (max-width:420px){.slot,.lt{width:36px;height:44px;font-size:1.25rem}}
+@media (max-width:420px){.slot,.lt{width:40px;height:48px;font-size:1.35rem}}
 .slot{border:2px dashed var(--muted);background:var(--surface-2)}
 .slot.f{border-style:solid;border-color:var(--sky)}
 .slots.ok .slot{background:var(--ok-bg);border-color:var(--ok)}
@@ -170,7 +173,7 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 .res{background:var(--surface);border-radius:26px;padding:26px 22px;max-width:380px;width:100%;text-align:center;display:grid;gap:12px;border:3px solid var(--line)}
 .res h3{font-size:1.8rem}
 .res .stars{display:flex;justify-content:center;gap:6px}
-.res .stars svg{width:54px;height:54px}
+.res .stars svg{width:60px;height:60px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:30;max-width:calc(100% - 32px);text-align:center}
 .shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
@@ -450,7 +453,7 @@ function Cloze(){
     $('#hud').innerHTML=pillHTML('q',`${i+1} / ${Q}`)+pillHTML('sc',`맞힌 문제 ${score}`);
     $('#stage').innerHTML=`<div class="bar"><i style="width:${i/Q*100}%"></i></div>
       <div class="sent">${exHTML(x,'blank')}</div>
-      <div class="ko" id="ko"><button class="btn" id="hint" style="font-size:.95rem;padding:6px 12px">우리말 힌트 보기</button></div>
+      <div class="ko" id="ko"><button class="btn" id="hint" style="font-size:1rem;padding:8px 14px">우리말 힌트 보기</button></div>
       <div class="opts">${opts.map(o=>`<button class="opt en" data-w="${esc(o.w)}">${esc(o.w)}</button>`).join('')}</div>
       <div class="note" id="note">${changed?'<span class="muted" style="font-family:var(--f-body);font-size:.95rem">힌트: 빈칸에서는 단어 모양이 조금 바뀌어요 (예: -s, -ed)</span>':''}</div>
       <div class="row" style="margin-top:8px"><button class="btn main" id="nx" hidden>${i===Q-1?'결과 보기':'다음 문제 ▶'}</button></div>`;
