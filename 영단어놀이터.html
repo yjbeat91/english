@@ -392,7 +392,7 @@ function makeBoard(rows,game,period,pid,now,limit){
 
 /* ===================== 닉네임 · 랭킹 · 칭호 ===================== */
 /* 구글 스프레드시트 랭킹 주소: Apps Script 배포 후 받은 웹 앱 URL을 따옴표 안에 넣어요. 비워 두면 이 기기 안에서만 랭킹을 보여줘요. */
-const RANK_URL='';
+const RANK_URL='https://script.google.com/macros/s/AKfycbw2RFiL6W5Wep0dQjXlkVEZ8En_2monCR3mIhu5esKM0eDSXt4nQLLN_MrPeKtfN8Ty/exec';
 const ONLINE=!!RANK_URL;
 const GAME_NAME={cards:'단어 카드',memory:'짝짓기',connect:'선 연결하기',cloze:'빈칸 채우기',spell:'철자 퍼즐',speed:'번개 퀴즈'};
 const GAME_RULE={cards:'외운 단어가 많은 순',memory:'시도 횟수가 적은 순 · 같으면 빠른 순',connect:'실수가 적은 순 · 같으면 빠른 순',
