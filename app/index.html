@@ -24,6 +24,7 @@
   --ok:#4BD08A; --ok-bg:#173A2A; --bad:#FF7A7F; --bad-bg:#40202352; --hi:#4A4220;
   --shadow:0 3px 0 rgba(0,0,0,.35); color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{--fs:1;font-size:calc(18px * var(--fs));-webkit-text-size-adjust:100%}
 @media (max-width:480px){html{font-size:calc(19px * var(--fs))}}
 .fsbar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:6px 8px;margin-bottom:10px}
@@ -258,6 +259,8 @@ mark{background:var(--hi);color:inherit;border-radius:4px;padding:0 3px}
 .shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
 .pop{animation:pop .35s}
+.clear-bn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;background:var(--sun);color:var(--on-color);font-family:var(--f-display);font-size:2rem;padding:14px 26px;border-radius:20px;box-shadow:0 6px 0 rgba(0,0,0,.2);white-space:nowrap;animation:bnIn .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bnIn{from{transform:translate(-50%,-50%) scale(.3);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 @keyframes pop{50%{transform:scale(1.08)}}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:25}
 /* nickname · ranking · badges */
@@ -392,6 +395,11 @@ function note(f,t,d,o){o=o||{};const g=ac.createGain(),osc=ac.createOscillator()
   if(o.glide)osc.frequency.exponentialRampToValueAtTime(o.glide,t+d);const v=o.vol||.3;
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+(o.attack||.006));g.gain.exponentialRampToValueAtTime(.0001,t+d);
   osc.connect(g);g.connect(master);osc.start(t);osc.stop(t+d+.05)}
+function brass(f,t,d,v){const g=ac.createGain(),lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
+  lp.frequency.setValueAtTime(f*1.5,t);lp.frequency.exponentialRampToValueAtTime(f*7,t+.05);lp.frequency.exponentialRampToValueAtTime(f*3,t+d);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.03);g.gain.setValueAtTime(v*.85,t+Math.max(.04,d-.08));g.gain.exponentialRampToValueAtTime(.0001,t+d+.12);
+  [['sawtooth',0],['sawtooth',6],['square',-5]].forEach(([ty,det])=>{const o=ac.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=det;o.connect(lp);o.start(t);o.stop(t+d+.2)});
+  lp.connect(g);g.connect(master)}
 function bell(f,t,d,v){v=Math.min(.9,v*2);note(f,t,d,{vol:v,type:'triangle'});note(f,t,d*.8,{vol:v*.5});note(f*2,t,d*.6,{vol:v*.35});note(f*3.01,t,d*.35,{vol:v*.18,type:'triangle'})}
 function hush(){if(canSpeak)try{speechSynthesis.cancel()}catch(e){}}
 function play(fn){if(!S.sound)return;try{const c=actx();if(c)fn(c.currentTime+.02)}catch(e){}}
@@ -401,7 +409,10 @@ const sfx={
     play(t=>{bell(base,t,.22,.26);bell(base*semi(4),t+.07,.22,.24);bell(base*semi(7),t+.14,.5,.28);
       if(streak>=3)for(let i=0;i<5;i++)note(base*4*semi(i*3),t+.24+i*.045,.14,{vol:.16,type:'triangle'});
       if(streak%5===0)[784,988,1175,1568].forEach((f,i)=>bell(f,t+.5+i*.08,.35,.2))})},
-  round:()=>{hush();play(t=>{[659.25,783.99,1046.5,1318.5].forEach((f,i)=>bell(f,t+i*.09,.4,.24));for(let i=0;i<6;i++)note(2093*semi(i*2),t+.4+i*.04,.12,{vol:.12,type:'triangle'})})},
+  round:()=>{hush();play(t=>{const v=.22;
+    [[392,0,.11],[392,.14,.11],[392,.28,.11],[523.25,.42,.42],[466.16,.9,.13],[523.25,1.05,.13]].forEach(([f,at,d])=>brass(f,t+at,d,v));
+    [523.25,659.25,783.99].forEach(f=>brass(f,t+1.2,.75,v*.8));brass(1046.5,t+1.2,.75,v*.5);
+    bell(1046.5,t+1.2,.9,.18);for(let i=0;i<8;i++)note(2093*semi((i%4)*3),t+1.25+i*.06,.14,{vol:.13,type:'triangle'})})},
   no:()=>{hush();streak=0;play(t=>{note(330,t,.2,{type:'triangle',vol:.4,glide:262});note(262,t+.17,.32,{type:'triangle',vol:.36,glide:196})})},
   flip:()=>play(t=>note(880,t,.07,{type:'triangle',vol:.22,glide:1250})),
   coin:()=>play(t=>{note(988,t,.08,{type:'square',vol:.2});note(1319,t+.08,.4,{type:'square',vol:.2})}),
@@ -750,7 +761,7 @@ function Connect(){
       if(!pick||pick.dataset.s===n.dataset.s){if(pick)pick.classList.remove('sel');pick=n;n.classList.add('sel');sfx.flip();return}
       const a=pick.dataset.s==='L'?pick:n,b=pick.dataset.s==='L'?n:pick;pick.classList.remove('sel');pick=null;
       if(a.dataset.w===b.dataset.w){a.classList.add('ok');b.classList.add('ok');lines.push([a,b,'ok']);sfx.ok();done++;markRight({w:a.dataset.w});drawLines();
-        if(done===N){r++;if(r<ROUNDS){later(sfx.round,350);later(round,1100)}else{const st=miss===0?3:miss<=3?2:1;
+        if(done===N){r++;if(r<ROUNDS){later(()=>{sfx.round();confetti();const bn=document.createElement('div');bn.className='clear-bn';bn.textContent=r+'판 성공!';$('#cx').appendChild(bn)},350);later(round,2600)}else{const st=miss===0?3:miss<=3?2:1;
           const prev=S.best.connect;if(prev==null||miss<parseInt(prev)){S.best.connect='실수 '+miss+'번';save()}
           later(()=>result({title:'모두 연결했어요!',stars:st,line:`단어 ${N*ROUNDS}개, 실수 ${miss}번`,again:Connect,
             rec:recOf('connect',100-miss,t0,s=>`실수 ${miss}번 · ${s}초`),ctx:{game:'connect',miss}}),600)}}}
