@@ -383,32 +383,37 @@ let sel=new Set(S.sel||[]);
 /* ---------- sound & speech ---------- */
 /* 효과음: 정답은 맑은 종소리 "딩동댕", 연속으로 맞히면 음이 점점 올라가고 3연속부터 반짝 소리가 더해져요 */
 let ac=null,master=null,streak=0;
-function actx(){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ac=new C();master=ac.createGain();master.gain.value=.55;
-    const comp=ac.createDynamicsCompressor();master.connect(comp);comp.connect(ac.destination)}
+function actx(){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ac=new C();master=ac.createGain();master.gain.value=1;
+    const comp=ac.createDynamicsCompressor();comp.threshold.value=-14;comp.knee.value=8;comp.ratio.value=4;comp.attack.value=.002;comp.release.value=.2;
+    const out=ac.createGain();out.gain.value=1.6;master.connect(comp);comp.connect(out);out.connect(ac.destination)}
   if(ac.state==='suspended')ac.resume();return ac}
 addEventListener('pointerdown',()=>{if(S.sound)try{actx()}catch(e){}},{passive:true});
 function note(f,t,d,o){o=o||{};const g=ac.createGain(),osc=ac.createOscillator();osc.type=o.type||'sine';osc.frequency.setValueAtTime(f,t);
   if(o.glide)osc.frequency.exponentialRampToValueAtTime(o.glide,t+d);const v=o.vol||.3;
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+(o.attack||.006));g.gain.exponentialRampToValueAtTime(.0001,t+d);
   osc.connect(g);g.connect(master);osc.start(t);osc.stop(t+d+.05)}
-function bell(f,t,d,v){note(f,t,d,{vol:v});note(f*2,t,d*.6,{vol:v*.35});note(f*3.01,t,d*.35,{vol:v*.15,type:'triangle'})}
+function bell(f,t,d,v){v=Math.min(.9,v*2);note(f,t,d,{vol:v,type:'triangle'});note(f,t,d*.8,{vol:v*.5});note(f*2,t,d*.6,{vol:v*.35});note(f*3.01,t,d*.35,{vol:v*.18,type:'triangle'})}
+function hush(){if(canSpeak)try{speechSynthesis.cancel()}catch(e){}}
 function play(fn){if(!S.sound)return;try{const c=actx();if(c)fn(c.currentTime+.02)}catch(e){}}
 const semi=n=>Math.pow(2,n/12);
 const sfx={
-  ok:()=>{streak++;const up=semi(Math.min(streak-1,10)),base=[523.25,587.33,659.25][Math.random()*3|0]*up;
+  ok:()=>{hush();streak++;const up=semi(Math.min(streak-1,10)),base=[523.25,587.33,659.25][Math.random()*3|0]*up;
     play(t=>{bell(base,t,.22,.26);bell(base*semi(4),t+.07,.22,.24);bell(base*semi(7),t+.14,.5,.28);
-      if(streak>=3)for(let i=0;i<5;i++)note(base*4*semi(i*3),t+.24+i*.045,.14,{vol:.07,type:'triangle'})})},
-  no:()=>{streak=0;play(t=>{note(330,t,.2,{type:'triangle',vol:.2,glide:262});note(262,t+.17,.32,{type:'triangle',vol:.18,glide:196})})},
-  flip:()=>play(t=>note(880,t,.07,{type:'triangle',vol:.1,glide:1250})),
-  coin:()=>play(t=>{note(988,t,.08,{type:'square',vol:.09});note(1319,t+.08,.4,{type:'square',vol:.09})}),
+      if(streak>=3)for(let i=0;i<5;i++)note(base*4*semi(i*3),t+.24+i*.045,.14,{vol:.16,type:'triangle'});
+      if(streak%5===0)[784,988,1175,1568].forEach((f,i)=>bell(f,t+.5+i*.08,.35,.2))})},
+  round:()=>{hush();play(t=>{[659.25,783.99,1046.5,1318.5].forEach((f,i)=>bell(f,t+i*.09,.4,.24));for(let i=0;i<6;i++)note(2093*semi(i*2),t+.4+i*.04,.12,{vol:.12,type:'triangle'})})},
+  no:()=>{hush();streak=0;play(t=>{note(330,t,.2,{type:'triangle',vol:.4,glide:262});note(262,t+.17,.32,{type:'triangle',vol:.36,glide:196})})},
+  flip:()=>play(t=>note(880,t,.07,{type:'triangle',vol:.22,glide:1250})),
+  coin:()=>play(t=>{note(988,t,.08,{type:'square',vol:.2});note(1319,t+.08,.4,{type:'square',vol:.2})}),
   win:stars=>{stars=stars||2;play(t=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>bell(f,t+i*.12,.35,.24));
     if(stars>=2){bell(783.99,t+.56,.6,.18);bell(1046.5,t+.56,.8,.24);bell(1318.5,t+.56,.9,.18)}
-    if(stars>=3)for(let i=0;i<10;i++)note(2093*semi((i%5)*2),t+.95+i*.05,.16,{vol:.06,type:'triangle'})})},
-  badge:()=>play(t=>{[784,988,1175,1568].forEach((f,i)=>bell(f,t+i*.09,.45,.22));for(let i=0;i<6;i++)note(2637*semi(i),t+.42+i*.045,.12,{vol:.05,type:'triangle'})}),
+    if(stars>=3)for(let i=0;i<10;i++)note(2093*semi((i%5)*2),t+.95+i*.05,.16,{vol:.14,type:'triangle'})})},
+  badge:()=>play(t=>{[784,988,1175,1568].forEach((f,i)=>bell(f,t+i*.09,.45,.22));for(let i=0;i<6;i++)note(2637*semi(i),t+.42+i*.045,.12,{vol:.12,type:'triangle'})}),
   reset:()=>{streak=0}
 };
 const canSpeak='speechSynthesis' in window;
-function speak(t){ if(!canSpeak) return; try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}catch(e){} }
+let speakT=0;function speakLater(t,ms){clearTimeout(speakT);speakT=setTimeout(()=>speak(t),ms)}
+function speak(t){clearTimeout(speakT);if(!t)return; if(!canSpeak) return; try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}catch(e){} }
 const ICON_SAY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const sayBtn=w=>canSpeak?`<button class="say" data-say="${esc(w)}" aria-label="${esc(w)} 발음 듣기">${ICON_SAY}</button>`:'';
 document.addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(b){e.stopPropagation();speak(b.dataset.say)}},true);
@@ -631,9 +636,11 @@ function result({title,stars,line,again,best,rec,ctx}){
 
 /* ---------- screens ---------- */
 let cleanup=null;
-function goHome(){ curScreen=''; if(cleanup){cleanup();cleanup=null} if(canSpeak)try{speechSynthesis.cancel()}catch(e){}
+/* 게임을 나가면 그 게임의 남은 타이머가 다른 화면을 건드리지 않게 해요 */
+let runId=0;const later=(fn,ms)=>{const id=runId;setTimeout(()=>{if(id===runId)fn()},ms)};
+function goHome(){ runId++; clearTimeout(speakT); curScreen=''; if(cleanup){cleanup();cleanup=null} if(canSpeak)try{speechSynthesis.cancel()}catch(e){}
   $('#game').hidden=true;$('#home').hidden=false;renderHome();scrollTo(0,0)}
-function openGame(id){if(!W.length){toast('단어를 불러오는 중이에요. 잠시만 기다려 주세요');return}const g=GAMES.find(g=>g.id===id);enterSub();sfx.reset();curScreen='game';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent=g.name;$('#hud').innerHTML='';
+function openGame(id){if(!W.length){toast('단어를 불러오는 중이에요. 잠시만 기다려 주세요');return}const g=GAMES.find(g=>g.id===id);enterSub();sfx.reset();runId++;curScreen='game';$('#home').hidden=true;$('#game').hidden=false;$('#gTitle').textContent=g.name;$('#hud').innerHTML='';
   if(cleanup){cleanup();cleanup=null} g.run();scrollTo(0,0)}
 $('#backBtn').onclick=()=>toHome();
 /* ---------- 휴대폰 뒤로 가기: 한 번 누르면 이전(처음) 화면, 처음 화면에서 두 번 누르면 종료 ---------- */
@@ -743,9 +750,9 @@ function Connect(){
       if(!pick||pick.dataset.s===n.dataset.s){if(pick)pick.classList.remove('sel');pick=n;n.classList.add('sel');sfx.flip();return}
       const a=pick.dataset.s==='L'?pick:n,b=pick.dataset.s==='L'?n:pick;pick.classList.remove('sel');pick=null;
       if(a.dataset.w===b.dataset.w){a.classList.add('ok');b.classList.add('ok');lines.push([a,b,'ok']);sfx.ok();done++;markRight({w:a.dataset.w});drawLines();
-        if(done===N){r++;if(r<ROUNDS)setTimeout(round,700);else{const st=miss===0?3:miss<=3?2:1;
+        if(done===N){r++;if(r<ROUNDS){later(sfx.round,350);later(round,1100)}else{const st=miss===0?3:miss<=3?2:1;
           const prev=S.best.connect;if(prev==null||miss<parseInt(prev)){S.best.connect='실수 '+miss+'번';save()}
-          setTimeout(()=>result({title:'모두 연결했어요!',stars:st,line:`단어 ${N*ROUNDS}개, 실수 ${miss}번`,again:Connect,
+          later(()=>result({title:'모두 연결했어요!',stars:st,line:`단어 ${N*ROUNDS}개, 실수 ${miss}번`,again:Connect,
             rec:recOf('connect',100-miss,t0,s=>`실수 ${miss}번 · ${s}초`),ctx:{game:'connect',miss}}),600)}}}
       else{miss++;markWrong({w:a.dataset.w});sfx.no();const tmp=[a,b,'no'];lines.push(tmp);a.classList.add('no','shake');b.classList.add('no','shake');drawLines();
         $('#ms').textContent=`실수 ${miss}`;
@@ -782,7 +789,7 @@ function Cloze(){
       box.querySelectorAll('.opt').forEach(o=>{if(o.dataset.w===x.w)o.classList.add('ok')});
       if(ok){score++;sfx.ok();markRight(x);$('#note').className='note ok';$('#note').textContent=`정답! ${x.w} = ${x.m}`}
       else{b.classList.add('no','shake');sfx.no();markWrong(x);$('#note').className='note no';$('#note').textContent=`정답은 ${x.w} (${x.m})`}
-      $('#sc').textContent=`맞힌 문제 ${score}`;speak(x.e);const nx=$('#nx');nx.hidden=false;nx.focus()};
+      $('#sc').textContent=`맞힌 문제 ${score}`;speakLater(x.e,ok?1000:700);const nx=$('#nx');nx.hidden=false;nx.focus()};
     $('#nx').onclick=()=>{i++;if(i<Q)draw();else{const st=score>=9?3:score>=6?2:1;const prev=S.best.cloze;if(prev==null||score>parseInt(prev)){S.best.cloze=score+'/'+Q;save()}
       result({title:'빈칸 채우기 끝!',stars:st,line:`${Q}문제 중 ${score}문제를 맞혔어요`,again:Cloze,
         rec:recOf('cloze',score,t0,s=>`${score}/${Q} · ${s}초`),ctx:{game:'cloze',score}})}};
@@ -807,7 +814,7 @@ function Spell(){
       $('#tiles').innerHTML=letters.map((l,k)=>`<button class="lt ${used.has(k)?'used':''}" data-t="${k}">${esc(l)}</button>`).join('');
     }
     function check(){if(slots.some(s=>!s))return;const guess=slots.map(s=>letters[s.t]).join('');const el=$('#slots');
-      if(guess===word){el.classList.add('ok');sfx.ok();score++;markRight(x);$('#note').className='note ok';$('#note').innerHTML=`정답! <span class="en">${esc(x.w)}</span>`;speak(x.w);lockAll();setTimeout(next,1100)}
+      if(guess===word){el.classList.add('ok');sfx.ok();score++;markRight(x);$('#note').className='note ok';$('#note').innerHTML=`정답! <span class="en">${esc(x.w)}</span>`;speakLater(x.w,850);lockAll();later(next,1700)}
       else{tries++;el.classList.add('no','shake');sfx.no();if(tries===1)markWrong(x);setTimeout(()=>{el.classList.remove('no','shake');slots=slots.map(()=>null);paint()},650)}}
     function lockAll(){$('#stage').querySelectorAll('.lt,.slot,#hint,#clr,#skip').forEach(b=>b.disabled=true)}
     function next(){i++;if(i<Q)draw();else{const st=score>=7&&hints<=2?3:score>=5?2:1;const prev=S.best.spell;if(prev==null||score>parseInt(prev)){S.best.spell=score+'/'+Q;save()}
@@ -820,7 +827,7 @@ function Spell(){
       const keep=slots.slice(0,n);slots=Array(word.length).fill(null);keep.forEach((s,k)=>slots[k]=s);
       const usedT=new Set(keep.map(s=>s.t));const t=letters.findIndex((l,k)=>l===word[n]&&!usedT.has(k));slots[n]={t};paint();check()};
     $('#skip').onclick=()=>{markWrong(x);const usedT=new Set();slots=[...word].map(ch=>{const t=letters.findIndex((l,k)=>l===ch&&!usedT.has(k));usedT.add(t);return{t}});paint();
-      $('#note').className='note no';$('#note').innerHTML=`정답은 <span class="en">${esc(x.w)}</span>`;speak(x.w);lockAll();setTimeout(next,1800)};
+      $('#note').className='note no';$('#note').innerHTML=`정답은 <span class="en">${esc(x.w)}</span>`;speakLater(x.w,600);lockAll();later(next,2000)};
     paint();
   }
   draw();
